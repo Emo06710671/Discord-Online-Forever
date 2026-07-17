@@ -25,16 +25,6 @@ bot.on("ready", async () => {
   }
 });
 
-// Bot sesli kanaldan çıkarılırsa otomatik geri katıl
-bot.on("voiceChannelLeave", (member) => {
-  if (member.id === bot.user.id) {
-    console.log("⚠️ Bot sesli kanaldan çıkarıldı! Geri katılıyor...");
-    setTimeout(() => {
-      bot.joinVoiceChannel(VOICE_CHANNEL_ID).catch(e => console.error("Geri katılma hatası:", e));
-    }, 5000);
-  }
-});
-
 // Ses kanalına katılma komutu (opsiyonel)
 bot.on("messageCreate", async (msg) => {
   if (msg.content.startsWith("!join")) {
