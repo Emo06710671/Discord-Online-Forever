@@ -19,8 +19,10 @@ bot.on("disconnect", () => {
   console.log("⚠️ Bot bağlantısı kesildi!");
 });
 
-// DM mesajlarını dinle
+// TÜM mesajları dinle (debug için)
 bot.on("messageCreate", async (msg) => {
+  console.log(`📩 Mesaj: [${msg.channel.isDM ? "DM" : "Guild"}] ${msg.author.username}: ${msg.content.substring(0, 50)}`);
+  
   // Eğer DM ise ve bot kendisine yazılmamışsa
   if (msg.channel.isDM && msg.author.id !== bot.user.id) {
     const content = msg.content.trim();
@@ -29,6 +31,7 @@ bot.on("messageCreate", async (msg) => {
     
     // Çık komutu
     if (content.toLowerCase() === "çık") {
+      console.log("❗ Çık komutu alındı");
       if (currentVoiceChannel) {
         try {
           bot.leaveVoiceChannel(currentVoiceChannel);
@@ -65,6 +68,8 @@ bot.on("messageCreate", async (msg) => {
         console.error("❌ Kanala katılma hatası:", err.message);
         msg.author.getDMChannel().then(dm => dm.createMessage("❌ Kanala katılamadım: " + err.message));
       }
+    } else {
+      console.log("❓ Tanınmayan komut:", content);
     }
   }
 });
