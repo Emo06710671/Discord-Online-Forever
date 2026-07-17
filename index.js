@@ -3,14 +3,13 @@ const keep_alive = require('./keep_alive.js')
 
 // Bot token
 const bot = new Eris(process.env.token, {
-  intents: ["guildVoiceStates", "guilds", "guildMembers"]
+  intents: ["guildVoiceStates", "guilds", "guildMembers", "directMessages"]
 });
 
-// Sabit ses kanalı ID'si
-const VOICE_CHANNEL_ID = "1512898390864695370";
+let currentVoiceChannel = null;
 
 console.log("🔧 Token:", process.env.token ? "✅ VAR" : "❌ YOK");
-console.log("🔧 Ses Kanalı ID:", VOICE_CHANNEL_ID);
+console.log("🔌 Bot bağlanıyor...");
 
 bot.on("error", (err) => {
   console.error("❌ BOT HATASI:", err);
@@ -20,42 +19,61 @@ bot.on("disconnect", () => {
   console.log("⚠️ Bot bağlantısı kesildi!");
 });
 
-// Bot bağlandığında hemen ses kanalına katıl
-bot.on("connect", async () => {
-  console.log("✅ Bot bağlantısı kuruldu! Ses kanalına katılıyor...");
-  try {
-    await bot.joinVoiceChannel(VOICE_CHANNEL_ID);
-    console.log("✅ Bot ses kanalına başarıyla katıldı!");
-    console.log("🎤 Bot artık o kanalda kalacak. PC kapatsan bile!");
-  } catch (err) {
-    console.error("❌ Ses kanalına katılamadı:", err.message);
-    // Hata olursa 10 saniye sonra tekrar dene
-    setTimeout(async () => {
-      try {
-        await bot.joinVoiceChannel(VOICE_CHANNEL_ID);
-        console.log("✅ Yeniden deneme başarılı!");
-      } catch (e) {
-        console.error("❌ Yeniden deneme hatası:", e.message);
+// DM mesajlarını dinle
+bot.on("messageCreate", async (msg) => {
+  // Eğer DM ise ve bot kendisine yazılmamışsa
+  if (msg.channel.isDM && msg.author.id !== bot.user.id) {
+    const content = msg.content.trim();
+    
+    console.log("📨 DM alındı:", content);
+    
+    // Çık komutu
+    if (content.toLowerCase() === "çık") {
+      if (currentVoiceChannel) {
+        try {
+          bot.leaveVoiceChannel(currentVoiceChannel);
+          currentVoiceChannel = null;
+          msg.author.getDMChannel().then(dm => dm.createMessage("✅ Ses kanalından çıktım!"));
+          console.log("✅ Bot ses kanalından çıktı");
+        } catch (err) {
+          console.error("❌ Çıkma hatası:", err.message);
+          msg.author.getDMChannel().then(dm => dm.createMessage("❌ Çıkamadım: " + err.message));
+        }
+      } else {
+        msg.author.getDMChannel().then(dm => dm.createMessage("⚠️ Zaten hiçbir kanaldda değilim!"));
       }
-    }, 10000);
-  }
-});
-
-// Bağlantı kopması durumunda yeniden katıl
-bot.on("voiceChannelLeave", async (oldChannel) => {
-  if (oldChannel.id === VOICE_CHANNEL_ID) {
-    console.log("⚠️ Bot kanaldan çıktı! Yeniden katılıyor...");
-    setTimeout(async () => {
+      return;
+    }
+    
+    // Voice channel linki kontrol et
+    // Format: https://discordapp.com/channels/SERVER_ID/CHANNEL_ID
+    const voiceChannelMatch = content.match(/channels\/(\d+)\/(\d+)/);
+    
+    if (voiceChannelMatch) {
+      const serverId = voiceChannelMatch[1];
+      const channelId = voiceChannelMatch[2];
+      
+      console.log(`🔗 Voice channel linki alındı - Server: ${serverId}, Channel: ${channelId}`);
+      
       try {
-        await bot.joinVoiceChannel(VOICE_CHANNEL_ID);
-        console.log("✅ Bot yeniden katıldı!");
+        // Kanala katıl
+        await bot.joinVoiceChannel(channelId);
+        currentVoiceChannel = channelId;
+        msg.author.getDMChannel().then(dm => dm.createMessage(`✅ <#${channelId}> kanalına katıldım!`));
+        console.log(`✅ Bot ${channelId} kanalına katıldı!`);
       } catch (err) {
-        console.error("❌ Yeniden katılma hatası:", err.message);
+        console.error("❌ Kanala katılma hatası:", err.message);
+        msg.author.getDMChannel().then(dm => dm.createMessage("❌ Kanala katılamadım: " + err.message));
       }
-    }, 5000);
+    }
   }
 });
 
-console.log("🔌 Bot bağlanıyor...");
+// Bot bağlandığında
+bot.on("connect", () => {
+  console.log("✅ Bot bağlantısı kuruldu!");
+});
+
+console.log("🔌 Bot başlatılıyor...");
 bot.connect();
 
