@@ -6,8 +6,15 @@ const bot = new Eris(process.env.token);
 
 const VOICE_CHANNEL_ID = "1512898390864695370"; // Sesli kanal ID
 
+console.log("🔧 Token:", process.env.token ? "✅ VAR" : "❌ YOK");
+console.log("🔧 Sesli Kanal ID:", VOICE_CHANNEL_ID);
+
 bot.on("error", (err) => {
-  console.error(err); // or your preferred logger
+  console.error("❌ BOT HATASI:", err); // or your preferred logger
+});
+
+bot.on("disconnect", () => {
+  console.log("⚠️ Bot bağlantısı kesildi!");
 });
 
 // Bot bağlandığında otomatik sesli kanala katıl
@@ -47,5 +54,6 @@ bot.on("messageCreate", async (msg) => {
   }
 });
 
+console.log("🔌 Bot bağlanıyor...");
 bot.connect(); // Get the bot to connect to Discord
 
