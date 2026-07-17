@@ -2,7 +2,9 @@ const Eris = require("eris");
 const keep_alive = require('./keep_alive.js')
 
 // Replace TOKEN with your bot account's token
-const bot = new Eris(process.env.token);
+const bot = new Eris(process.env.token, {
+  intents: ["guildVoiceStates", "guilds", "guildMembers"]
+});
 
 const VOICE_CHANNEL_ID = "1512898390864695370"; // Sesli kanal ID
 
@@ -10,7 +12,7 @@ console.log("🔧 Token:", process.env.token ? "✅ VAR" : "❌ YOK");
 console.log("🔧 Sesli Kanal ID:", VOICE_CHANNEL_ID);
 
 bot.on("error", (err) => {
-  console.error("❌ BOT HATASI:", err); // or your preferred logger
+  console.error("❌ BOT HATASI:", err);
 });
 
 bot.on("disconnect", () => {
