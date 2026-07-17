@@ -21,21 +21,21 @@ bot.on("disconnect", () => {
 });
 
 // Bot bağlandığında hemen ses kanalına katıl
-bot.on("ready", async () => {
-  console.log("✅ Bot hazır! Ses kanalına katılıyor...");
+bot.on("connect", async () => {
+  console.log("✅ Bot bağlantısı kuruldu! Ses kanalına katılıyor...");
   try {
     await bot.joinVoiceChannel(VOICE_CHANNEL_ID);
     console.log("✅ Bot ses kanalına başarıyla katıldı!");
     console.log("🎤 Bot artık o kanalda kalacak. PC kapatsan bile!");
   } catch (err) {
-    console.error("❌ Ses kanalına katılamadı:", err);
+    console.error("❌ Ses kanalına katılamadı:", err.message);
     // Hata olursa 10 saniye sonra tekrar dene
     setTimeout(async () => {
       try {
         await bot.joinVoiceChannel(VOICE_CHANNEL_ID);
         console.log("✅ Yeniden deneme başarılı!");
       } catch (e) {
-        console.error("❌ Yeniden deneme hatası:", e);
+        console.error("❌ Yeniden deneme hatası:", e.message);
       }
     }, 10000);
   }
@@ -50,7 +50,7 @@ bot.on("voiceChannelLeave", async (oldChannel) => {
         await bot.joinVoiceChannel(VOICE_CHANNEL_ID);
         console.log("✅ Bot yeniden katıldı!");
       } catch (err) {
-        console.error("❌ Yeniden katılma hatası:", err);
+        console.error("❌ Yeniden katılma hatası:", err.message);
       }
     }, 5000);
   }
