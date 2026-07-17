@@ -6,12 +6,11 @@ const bot = new Eris(process.env.token, {
   intents: ["guildVoiceStates", "guilds", "guildMembers"]
 });
 
-// Sizin Discord ID'niz (main hesap)
-const YOUR_USER_ID = "1523422874679902298";
-let connectedChannelId = null;
+// Sabit ses kanalı ID'si
+const VOICE_CHANNEL_ID = "1512898390864695370";
 
 console.log("🔧 Token:", process.env.token ? "✅ VAR" : "❌ YOK");
-console.log("🔧 Ana Hesap ID:", YOUR_USER_ID);
+console.log("🔧 Ses Kanalı ID:", VOICE_CHANNEL_ID);
 
 bot.on("error", (err) => {
   console.error("❌ BOT HATASI:", err);
@@ -21,70 +20,39 @@ bot.on("disconnect", () => {
   console.log("⚠️ Bot bağlantısı kesildi!");
 });
 
-// Bot bağlandığında hazır
+// Bot bağlandığında hemen ses kanalına katıl
 bot.on("ready", async () => {
-  console.log("✅ Bot hazır! Siz ses kanalına giriş yaptığında otomatik katılacağım...");
-});
-
-// Ses kanalı olaylarını dinle
-bot.on("voiceStateUpdate", async (oldState, newState) => {
-  // Yalnızca main hesabınızın olaylarını izle
-  if (newState.userId !== YOUR_USER_ID) return;
-
-  // Siz ses kanalına girdiyseniz
-  if (newState.channelId && !oldState.channelId) {
-    try {
-      connectedChannelId = newState.channelId;
-      console.log(`🎤 Siz ses kanalına girdiniz (ID: ${newState.channelId}). Bot katılıyor...`);
-      await bot.joinVoiceChannel(newState.channelId);
-      console.log(`✅ Bot başarıyla ses kanalına katıldı! PC kapatsan bile kanalda kalacak.`);
-    } catch (err) {
-      console.error("❌ Bot ses kanalına katılamadı:", err);
-    }
-  }
-
-  // Siz ses kanalından çıktıysanız
-  if (!newState.channelId && oldState.channelId) {
-    try {
-      if (connectedChannelId) {
-        console.log(`👋 Siz ses kanalından çıktınız. Bot da ayrılıyor...`);
-        bot.leaveVoiceChannel(connectedChannelId);
-        connectedChannelId = null;
-        console.log(`✅ Bot ses kanalından ayrıldı!`);
+  console.log("✅ Bot hazır! Ses kanalına katılıyor...");
+  try {
+    await bot.joinVoiceChannel(VOICE_CHANNEL_ID);
+    console.log("✅ Bot ses kanalına başarıyla katıldı!");
+    console.log("🎤 Bot artık o kanalda kalacak. PC kapatsan bile!");
+  } catch (err) {
+    console.error("❌ Ses kanalına katılamadı:", err);
+    // Hata olursa 10 saniye sonra tekrar dene
+    setTimeout(async () => {
+      try {
+        await bot.joinVoiceChannel(VOICE_CHANNEL_ID);
+        console.log("✅ Yeniden deneme başarılı!");
+      } catch (e) {
+        console.error("❌ Yeniden deneme hatası:", e);
       }
-    } catch (err) {
-      console.error("❌ Bot ses kanalından ayrılamadı:", err);
-    }
+    }, 10000);
   }
 });
 
-// Manuel komutlar (opsiyonel)
-bot.on("messageCreate", async (msg) => {
-  if (msg.content.startsWith("!join")) {
-    try {
-      if (msg.member?.voiceState?.channelId) {
-        connectedChannelId = msg.member.voiceState.channelId;
-        await bot.joinVoiceChannel(msg.member.voiceState.channelId);
-        msg.reply("✅ Sesli kanala katıldım!");
-      } else {
-        msg.reply("❌ Önce siz bir sesli kanala katılmalısınız!");
+// Bağlantı kopması durumunda yeniden katıl
+bot.on("voiceChannelLeave", async (oldChannel) => {
+  if (oldChannel.id === VOICE_CHANNEL_ID) {
+    console.log("⚠️ Bot kanaldan çıktı! Yeniden katılıyor...");
+    setTimeout(async () => {
+      try {
+        await bot.joinVoiceChannel(VOICE_CHANNEL_ID);
+        console.log("✅ Bot yeniden katıldı!");
+      } catch (err) {
+        console.error("❌ Yeniden katılma hatası:", err);
       }
-    } catch (err) {
-      console.error("Ses kanalına katılma hatası:", err);
-      msg.reply("❌ Sesli kanala katılamadım!");
-    }
-  }
-  
-  if (msg.content.startsWith("!leave")) {
-    try {
-      if (connectedChannelId) {
-        bot.leaveVoiceChannel(connectedChannelId);
-        connectedChannelId = null;
-        msg.reply("👋 Sesli kanaldan ayrıldım!");
-      }
-    } catch (err) {
-      console.error("Ses kanalından ayrılma hatası:", err);
-    }
+    }, 5000);
   }
 });
 
