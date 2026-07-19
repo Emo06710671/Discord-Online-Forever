@@ -7,6 +7,7 @@ const bot = new Eris(process.env.token, {
 });
 
 let currentVoiceChannel = null;
+let currentGuildId = null;
 
 console.log("🔧 Token:", process.env.token ? "✅ VAR" : "❌ YOK");
 console.log("🔌 Bot bağlanıyor...");
@@ -33,6 +34,7 @@ bot.on("messageCreate", async (msg) => {
         try {
           bot.leaveVoiceChannel(currentVoiceChannel);
           currentVoiceChannel = null;
+          currentGuildId = null;
           msg.author.getDMChannel().then(dm => dm.createMessage("✅ Ses kanalından çıktım!"));
           console.log("✅ Bot ses kanalından çıktı");
         } catch (err) {
@@ -59,8 +61,9 @@ bot.on("messageCreate", async (msg) => {
         // Kanala katıl
         await bot.joinVoiceChannel(channelId);
         currentVoiceChannel = channelId;
-        msg.author.getDMChannel().then(dm => dm.createMessage(`✅ <#${channelId}> kanalına katıldım!`));
-        console.log(`✅ Bot ${channelId} kanalına katıldı!`);
+        currentGuildId = serverId;
+        msg.author.getDMChannel().then(dm => dm.createMessage(`✅ <#${channelId}> kanalına katıldım! 🎤 Sonsuza dek burada kalacağım...`));
+        console.log(`✅ Bot ${channelId} kanalına katıldı! (Server: ${serverId})`);
       } catch (err) {
         console.error("❌ Kanala katılma hatası:", err.message);
         msg.author.getDMChannel().then(dm => dm.createMessage("❌ Kanala katılamadım: " + err.message));
@@ -69,9 +72,51 @@ bot.on("messageCreate", async (msg) => {
   }
 });
 
+// Bot bağlantısı kopunca yeniden katıl
+bot.on("voiceChannelLeave", async (oldChannel) => {
+  console.log(`⚠️ Bot ${oldChannel.id} kanalından çıktı!`);
+  
+  if (currentVoiceChannel && oldChannel.id === currentVoiceChannel) {
+    console.log("🔄 Yeniden katılmayı deniyorum...");
+    setTimeout(async () => {
+      try {
+        await bot.joinVoiceChannel(currentVoiceChannel);
+        console.log(`✅ Bot yeniden ${currentVoiceChannel} kanalına katıldı!`);
+      } catch (err) {
+        console.error("❌ Yeniden katılma hatası:", err.message);
+        // 5 saniye sonra tekrar dene
+        setTimeout(async () => {
+          try {
+            await bot.joinVoiceChannel(currentVoiceChannel);
+            console.log(`✅ İkinci deneme başarılı! Bot ${currentVoiceChannel} kanalında!`);
+          } catch (e) {
+            console.error("❌ İkinci deneme hatası:", e.message);
+          }
+        }, 5000);
+      }
+    }, 3000);
+  }
+});
+
 // Bot bağlandığında
 bot.on("connect", () => {
   console.log("✅ Bot bağlantısı kuruldu!");
+  
+  // Sonsuza dek çevrimiçi statüsü ayarla
+  bot.editStatus("online", {
+    name: "🎤 Sesli Sohbet",
+    type: 2  // LISTENING
+  });
+  
+  console.log("🟢 Bot SONSUZA DEK çevrimiçi olarak ayarlandı!");
+});
+
+// Disconnection durumunda reconnect
+bot.on("shardDisconnect", () => {
+  console.log("🔌 Bot bağlantısı kesildi, yeniden bağlanıyor...");
+  setTimeout(() => {
+    bot.connect();
+  }, 5000);
 });
 
 console.log("🔌 Bot başlatılıyor...");
